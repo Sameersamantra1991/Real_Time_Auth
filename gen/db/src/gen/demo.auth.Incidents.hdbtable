@@ -1,0 +1,8 @@
+COLUMN TABLE demo_auth_Incidents (
+  ID INTEGER NOT NULL,
+  title NVARCHAR(200),
+  department NVARCHAR(50),
+  owner NVARCHAR(100),
+  status NVARCHAR(20) DEFAULT 'open',
+  PRIMARY KEY(ID)
+)

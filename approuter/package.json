@@ -1,0 +1,12 @@
+{
+  "name": "real-time-auth-demo-approuter",
+  "version": "1.0.0",
+  "description": "Front door for Diagram 1: redirects browsers to XSUAA login, forwards Bearer JWT to srv",
+  "private": true,
+  "dependencies": {
+    "@sap/approuter": "^23.3.0"
+  },
+  "scripts": {
+    "start": "node node_modules/@sap/approuter/approuter.js"
+  }
+}

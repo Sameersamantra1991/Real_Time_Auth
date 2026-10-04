@@ -1,0 +1,111 @@
+/* ============================================================================
+   FILE: app/styles.css (mirrored to approuter/resources/styles.css)
+   No frameworks — hand-tuned dark "BTP Fiori at night" theme. Single file so
+   the approuter can serve it with zero build step (MTA-friendly).
+   ========================================================================== */
+:root {
+  --bg: #0b1020;            /* page backdrop: deep navy gradient base */
+  --bg2: #111a33;
+  --card: rgba(255,255,255,.06);  /* glassmorphism card fill */
+  --line: rgba(255,255,255,.12);   /* hairline borders */
+  --txt: #eef2ff;           /* primary text */
+  --muted: #9aa6c7;         /* secondary text */
+  --accent: #6d9bff;        /* links, active tab underline */
+  --good: #34d399;          /* success / 200 */
+  --warn: #fbbf24;          /* 403 forbidden teaching color */
+  --bad: #f87171;           /* 401 / errors */
+  --radius: 14px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; color: var(--txt);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  background: radial-gradient(1200px 600px at 20% -10%, #24366b 0%, transparent 60%),
+              radial-gradient(1000px 500px at 90% 0%, #123f3a 0%, transparent 55%),
+              linear-gradient(180deg, var(--bg), var(--bg2));
+  min-height: 100vh;
+}
+/* Sticky glass top bar with identity pill (mirrors req.user state) */
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 26px; background: rgba(11,16,32,.75);
+  backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; gap: 12px; align-items: center; }
+.brand h1 { font-size: 1.15rem; margin: 0; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: .8rem; }
+.logo {
+  width: 38px; height: 38px; display: grid; place-items: center;
+  border-radius: 10px; font-size: 1.2rem; color: #0b1020;
+  background: linear-gradient(135deg, #9db8ff, #34d399);
+}
+.session { display: flex; gap: 10px; align-items: center; }
+.pill {
+  font-size: .8rem; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--card);
+}
+.pill.anon { color: var(--muted); }
+.pill.ok { color: var(--good); border-color: rgba(52,211,153,.4); }
+/* Main two-column layout, collapses on mobile */
+.layout {
+  display: grid; gap: 18px; padding: 22px;
+  grid-template-columns: 340px 1fr; max-width: 1200px; margin: 0 auto;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+}
+.card h2 { margin: 0 0 10px; font-size: 1rem; }
+.muted { color: var(--muted); }
+.hint { color: var(--muted); font-size: .82rem; line-height: 1.5; }
+code { background: rgba(255,255,255,.09); padding: 1px 6px; border-radius: 6px; font-size: .78rem; }
+/* Diagram stepper: each phase lights up as the flow succeeds (see app.js) */
+.stepper { grid-column: 1 / -1; }
+.stepper ol { display: flex; gap: 8px; list-style: none; padding: 0; margin: 0; flex-wrap: wrap; }
+.stepper li {
+  flex: 1; min-width: 130px; text-align: center; font-size: .8rem;
+  padding: 10px; border-radius: 10px; border: 1px dashed var(--line); color: var(--muted);
+}
+.stepper li.done { border-style: solid; color: var(--good); border-color: rgba(52,211,153,.5); background: rgba(52,211,153,.08); }
+/* Forms + buttons */
+.form-grid { display: grid; gap: 10px; margin-top: 10px; }
+.form-grid.cols4 { grid-template-columns: repeat(5, 1fr); align-items: end; }
+@media (max-width: 900px) { .form-grid.cols4 { grid-template-columns: 1fr 1fr; } }
+label { display: grid; gap: 5px; font-size: .78rem; color: var(--muted); }
+input {
+  padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line);
+  background: rgba(0,0,0,.3); color: var(--txt); font-size: .9rem;
+}
+input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+.btn {
+  padding: 9px 14px; border-radius: 9px; cursor: pointer; font-size: .85rem;
+  border: 1px solid var(--line); background: rgba(255,255,255,.08); color: var(--txt);
+}
+.btn:hover { background: rgba(255,255,255,.14); }
+.btn.primary { background: linear-gradient(135deg, #4f7cff, #34d399); border: none; font-weight: 600; }
+.btn.ghost { background: transparent; }
+.personas { display: flex; gap: 8px; flex-wrap: wrap; }
+.hidden { display: none !important; }
+/* Key-value box for req.user dump */
+.kv { display: grid; grid-template-columns: 90px 1fr; gap: 6px 12px; margin: 0; font-size: .85rem; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; word-break: break-all; }
+/* Tabs */
+.tabbar { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.tab { background: none; border: none; color: var(--muted); padding: 10px 14px; cursor: pointer; font-size: .9rem; border-bottom: 2px solid transparent; }
+.tab.active { color: var(--txt); border-bottom-color: var(--accent); }
+/* Tables */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; }
+tbody tr:hover { background: rgba(255,255,255,.04); }
+.link { background: none; border: none; color: var(--bad); cursor: pointer; font-size: .8rem; }
+/* Admin output + toasts (toast color teaches the status code) */
+.output { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 10px; padding: 12px; font-size: .8rem; white-space: pre-wrap; }
+#toasts { position: fixed; right: 18px; bottom: 18px; display: grid; gap: 10px; max-width: 360px; }
+.toast { padding: 12px 14px; border-radius: 10px; font-size: .82rem; background: rgba(10,14,28,.92); border: 1px solid var(--line); border-left-width: 5px; }
+.toast.ok { border-left-color: var(--good); } .toast.warn { border-left-color: var(--warn); } .toast.bad { border-left-color: var(--bad); }
+.foot { text-align: center; padding: 18px; font-size: .78rem; }

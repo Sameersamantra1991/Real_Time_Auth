@@ -1,0 +1,225 @@
+<!-- ============================================================================
+  FILE: app/shop/webapp/view/Main.view.xml
+  Fiori-style single page: DynamicPage hero + KPI tiles, Cards for login and
+  req.user, IconTabBar for data. Binding recap for learners:
+  - {session>/id}   = named-model property binding (auto-escaped: UI5 renders
+                      text, never HTML -> stored-XSS payloads show as text).
+  - books>/value    = aggregation binding of the book Table rows.
+  - visible="{= ${session>/loggedIn} }" = expression binding toggling panels.
+  - {books>/value/length} = array-length binding for live tile/tab counters.
+  Every button documents WHICH diagram/HTTP outcome it can produce (200/401/403).
+============================================================================= -->
+<mvc:View
+  controllerName="demo.shop.controller.Main"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m"
+  xmlns:f="sap.f"
+  xmlns:card="sap.f.cards"
+  xmlns:form="sap.ui.layout.form"
+>
+  <Shell id="shell">
+    <App id="app">
+      <!-- DynamicPage: hero header (collapses on scroll) + footer bar -->
+      <DynamicPage id="dynPage" toggleHeaderOnTitleClick="true" showFooter="true">
+        <title>
+          <DynamicPageTitle>
+            <heading>
+              <HBox alignItems="Center">
+                <Avatar id="heroAvatar" displaySize="M" initials="?" backgroundShape="Circle" />
+                <VBox class="sapUiSmallMarginBegin">
+                  <Title text="Secure Bookstore" />
+                  <Text text="CAP · Authentication → Authorization · live demo" />
+                </VBox>
+              </HBox>
+            </heading>
+            <!-- Identity pill: anonymous until WhoAmI returns req.user -->
+            <actions>
+              <ObjectStatus id="whoPill" text="anonymous" state="None" />
+              <Button id="logoutBtn" text="Logout" press="onLogout" visible="{session>/loggedIn}" />
+            </actions>
+          </DynamicPageTitle>
+        </title>
+
+        <!-- Hero band: live KPI tiles after login, hint before -->
+        <header>
+          <DynamicPageHeader pinnable="true" class="heroHeader">
+            <MessageStrip
+              text="Log in below to load live numbers — each tile counts data YOUR roles and attributes unlock."
+              type="Information" showIcon="true"
+              visible="{= !${session>/loggedIn} }" />
+            <HBox wrap="Wrap" class="kpiRow" visible="{session>/loggedIn}">
+              <GenericTile header="Books visible" subheader="Role-gated catalog" frameType="OneByOne" class="sapUiTinyMarginEnd sapUiSmallMarginBottom">
+                <tileContent><TileContent><content>
+                  <NumericContent value="{books>/value/length}" icon="sap-icon://e-book" valueColor="Good" />
+                </content></TileContent></tileContent>
+              </GenericTile>
+              <GenericTile header="My tickets" subheader="Attribute-filtered rows" frameType="OneByOne" class="sapUiTinyMarginEnd sapUiSmallMarginBottom">
+                <tileContent><TileContent><content>
+                  <NumericContent value="{incidents>/value/length}" icon="sap-icon://customer-brief" valueColor="Neutral" />
+                </content></TileContent></tileContent>
+              </GenericTile>
+              <GenericTile header="My roles" subheader="From JWT scopes" frameType="OneByOne" class="sapUiSmallMarginBottom">
+                <tileContent><TileContent><content>
+                  <NumericContent value="{session>/rolesCount}" icon="sap-icon://permission" valueColor="Neutral" />
+                </content></TileContent></tileContent>
+              </GenericTile>
+            </HBox>
+          </DynamicPageHeader>
+        </header>
+
+        <content>
+          <VBox class="sapUiMediumMargin shopWrap">
+            <!-- Diagram stepper: phases light up (None -> Success) as flow works -->
+            <Panel headerText="Auth flow — watch it light up as you log in" class="sapUiSmallMarginBottom">
+              <HBox id="flowBox" wrap="Wrap" alignItems="Center" class="flowBox">
+                <ObjectStatus id="stepLogin" text="1 · Login" state="None" icon="sap-icon://person-placeholder" />
+                <Text text="→" class="flowArrow" />
+                <ObjectStatus id="stepToken" text="2 · Bearer JWT" state="None" icon="sap-icon://key" />
+                <Text text="→" class="flowArrow" />
+                <ObjectStatus id="stepValidate" text="3 · xssec validates" state="None" icon="sap-icon://shield" />
+                <Text text="→" class="flowArrow" />
+                <ObjectStatus id="stepUser" text="4 · req.user" state="None" icon="sap-icon://id-badge" />
+                <Text text="→" class="flowArrow" />
+                <ObjectStatus id="stepAuthz" text="5 · Authorization" state="None" icon="sap-icon://locked" />
+              </HBox>
+              <Text id="flowHint" text="Log in below to walk the diagram. Locally this uses Basic; in production the approuter swaps it for a Bearer-JWT session — backend code is identical." />
+            </Panel>
+
+            <!-- Login = 'User / UI5 / Postman' entry box (mocked personas) -->
+            <f:Card id="loginCard" visible="{= !${session>/loggedIn} }" class="sapUiSmallMarginBottom">
+              <f:header>
+                <card:Header title="Demo directory login" subtitle="Pick a persona — mocked users alice, bob, erin" iconSrc="sap-icon://person-placeholder" />
+              </f:header>
+              <f:content>
+                <VBox class="sapUiMediumMargin">
+                  <HBox wrap="Wrap" class="sapUiSmallMarginBottom">
+                    <Button text="alice · admin" icon="sap-icon://key" press="onPersona" type="Emphasized" class="sapUiTinyMarginEnd">
+                      <customData><core:CustomData key="user" value="alice" /><core:CustomData key="pass" value="alice" /></customData>
+                    </Button>
+                    <Button text="bob · viewer" icon="sap-icon://show" press="onPersona" class="sapUiTinyMarginEnd">
+                      <customData><core:CustomData key="user" value="bob" /><core:CustomData key="pass" value="bob" /></customData>
+                    </Button>
+                    <Button text="erin · support" icon="sap-icon://headset" press="onPersona">
+                      <customData><core:CustomData key="user" value="erin" /><core:CustomData key="pass" value="erin" /></customData>
+                    </Button>
+                  </HBox>
+                  <form:SimpleForm editable="true" layout="ResponsiveGridLayout" labelSpanM="2">
+                    <Label text="Username" /><Input id="userInput" value="alice" />
+                    <Label text="Password" /><Input id="passInput" type="Password" value="alice" />
+                  </form:SimpleForm>
+                  <Button text="Log in" type="Emphasized" press="onLogin" />
+                  <MessageStrip text="On BTP this form disappears: the approuter redirects to XSUAA login and the browser keeps a session cookie." type="Information" showIcon="true" class="sapUiSmallMarginTop" />
+                </VBox>
+              </f:content>
+            </f:Card>
+
+            <!-- req.user card: id / roles / tenant / attr straight from WhoAmI -->
+            <f:Card id="whoCard" visible="{session>/loggedIn}" class="sapUiSmallMarginBottom">
+              <f:header>
+                <card:Header title="{session>/id}" subtitle="req.user · {session>/tenant}" iconSrc="sap-icon://id-badge" />
+              </f:header>
+              <f:content>
+                <HBox wrap="Wrap" alignItems="Center" class="sapUiMediumMargin">
+                  <Avatar id="whoAvatar" displaySize="L" initials="?" backgroundShape="Circle" class="sapUiMediumMarginEnd" />
+                  <VBox>
+                    <ObjectStatus text="{session>/roles}" icon="sap-icon://permission" state="Success" title="roles" />
+                    <ObjectStatus text="{session>/dept}" icon="sap-icon://group" state="None" title="department" class="sapUiTinyMarginTop" />
+                    <ObjectStatus text="{session>/country}" icon="sap-icon://globe" state="None" title="country" class="sapUiTinyMarginTop" />
+                  </VBox>
+                </HBox>
+              </f:content>
+            </f:Card>
+
+            <IconTabBar id="tabs" class="sapUiResponsiveContentPadding">
+              <items>
+                <!-- BOOKS: Viewer reads (200), non-admin writes get 403 -->
+                <IconTabFilter text="Books" key="books" icon="sap-icon://e-book" count="{books>/value/length}">
+                  <MessageStrip text="Viewer may read · admin may write. Create as bob → 403 (server enforces, not the UI)." type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
+                  <Panel headerText="Add a book" expandable="true" expanded="false" class="sapUiSmallMarginBottom">
+                    <form:SimpleForm editable="true" layout="ResponsiveGridLayout" labelSpanM="3">
+                      <Label text="Title" /><Input id="bTitle" placeholder="Secure CAP" />
+                      <Label text="Author" /><Input id="bAuthor" placeholder="alice" />
+                      <Label text="Price" /><Input id="bPrice" type="Number" placeholder="42" />
+                      <Label text="Country" /><Input id="bCountry" maxLength="2" placeholder="DE" />
+                    </form:SimpleForm>
+                    <Button text="Add book" type="Emphasized" press="onAddBook" />
+                  </Panel>
+                  <Table id="bookTable" items="{books>/value}" growing="true" growingThreshold="20" sticky="ColumnHeaders">
+                    <headerToolbar>
+                      <OverflowToolbar>
+                        <Title text="Catalog" level="H3" />
+                        <ToolbarSpacer />
+                        <SearchField id="bookSearch" width="15rem" placeholder="Search title or author…" liveChange="onSearchBooks" />
+                      </OverflowToolbar>
+                    </headerToolbar>
+                    <columns>
+                      <Column><Text text="Book" /></Column>
+                      <Column hAlign="End" width="7rem"><Text text="Price" /></Column>
+                      <Column width="4rem"><Text text="CC" /></Column>
+                      <Column width="3rem"><Text text="" /></Column>
+                    </columns>
+                    <items>
+                      <ColumnListItem>
+                        <cells>
+                          <!-- ObjectIdentifier: title + author in one elegant row -->
+                          <ObjectIdentifier title="{books>title}" text="by {books>author} · #{books>ID}" />
+                          <ObjectNumber number="{books>price}" unit="EUR" />
+                          <Text text="{books>country}" />
+                          <!-- Shown to everyone on purpose: SERVER returns 403 for non-admin -->
+                          <Button icon="sap-icon://delete" type="Transparent" tooltip="Delete (admin only)" press="onDeleteBook" />
+                        </cells>
+                      </ColumnListItem>
+                    </items>
+                  </Table>
+                </IconTabFilter>
+
+                <!-- INCIDENTS: server filters rows by req.user.attr.department -->
+                <IconTabFilter text="Incidents" key="incidents" icon="sap-icon://customer-brief" count="{incidents>/value/length}">
+                  <MessageStrip text="Row-level security: the server filters by your department attribute. Erin sees only support tickets." type="Information" showIcon="true" class="sapUiSmallMarginBottom" />
+                  <Table id="incidentTable" items="{incidents>/value}" growing="true" growingThreshold="20" sticky="ColumnHeaders">
+                    <columns>
+                      <Column width="4rem"><Text text="ID" /></Column>
+                      <Column><Text text="Title" /></Column>
+                      <Column><Text text="Dept" /></Column>
+                      <Column><Text text="Owner" /></Column>
+                      <Column width="7rem"><Text text="Status" /></Column>
+                    </columns>
+                    <items>
+                      <ColumnListItem>
+                        <cells>
+                          <Text text="{incidents>ID}" />
+                          <ObjectIdentifier title="{incidents>title}" />
+                          <Text text="{incidents>department}" />
+                          <Text text="{incidents>owner}" />
+                          <ObjectStatus text="{incidents>status}" state="{= ${incidents>status} === 'open' ? 'Warning' : 'Success' }" />
+                        </cells>
+                      </ColumnListItem>
+                    </items>
+                  </Table>
+                </IconTabFilter>
+
+                <!-- ADMIN: action guarded by role 'admin' (bob 403, alice 200) -->
+                <IconTabFilter text="Admin" key="admin" icon="sap-icon://shield">
+                  <MessageStrip text="Action guarded by role admin — bob gets 403, alice gets 200." type="Warning" showIcon="true" class="sapUiSmallMarginBottom" />
+                  <Button text="Call pingAdminOnly()" type="Emphasized" press="onPing" icon="sap-icon://complete" />
+                  <Panel headerText="Response" class="sapUiSmallMarginTop">
+                    <FormattedText id="pingOut" htmlText="No call yet." class="monoOut" />
+                  </Panel>
+                </IconTabFilter>
+              </items>
+            </IconTabBar>
+          </VBox>
+        </content>
+
+        <footer>
+          <OverflowToolbar>
+            <Text text="Teaching UI · the server is the authority: hidden buttons ≠ permission." />
+            <ToolbarSpacer />
+            <Text text="Credentials stay in memory — closing the tab logs you out." />
+          </OverflowToolbar>
+        </footer>
+      </DynamicPage>
+    </App>
+  </Shell>
+</mvc:View>

@@ -1,0 +1,47 @@
+{
+  "_comment": "FILE: app/shop/webapp/manifest.json — UI5 app descriptor. id must match the resource-roots namespace (demo.shop) or views/controllers won't resolve.",
+  "sap.app": {
+    "id": "demo.shop",
+    "type": "application",
+    "title": "Secure Bookstore (UI5)",
+    "description": "UI5 frontend for the CAP auth-flow demo: login, role-gated books, attribute-filtered incidents, admin action",
+    "applicationVersion": { "version": "1.0.0" },
+    "crossNavigation": {
+      "inbounds": {
+        "shop-display": {
+          "semanticObject": "shop",
+          "action": "display",
+          "title": "Secure Bookstore",
+          "subTitle": "CAP auth-flow demo",
+          "icon": "sap-icon://book-stack",
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          }
+        }
+      }
+    }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "realtimeauthdemo.service"
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": { "desktop": true, "tablet": true, "phone": true }
+  },
+  "sap.ui5": {
+    "dependencies": {
+      "minUI5Version": "1.108.0",
+      "libs": { "sap.m": {}, "sap.f": {}, "sap.ui.layout": {} }
+    },
+    "rootView": {
+      "viewName": "demo.shop.view.Main",
+      "type": "XML",
+      "id": "main"
+    },
+    "resources": {
+      "css": [{ "uri": "css/style.css" }]
+    }
+  }
+}

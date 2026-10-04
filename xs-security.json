@@ -1,0 +1,67 @@
+{
+  "$schema": "https://sap.github.io/cloud-security-xsuaa-integration/xs-security.json",
+  "xsappname": "real-time-auth-demo",
+  "tenant-mode": "dedicated",
+  "description": "XSUAA config = LEFT arrow in diagram (xsuaa -> XSUAA Service). Maps JWT scopes to CAP roles used in @restrict.",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.Viewer",
+      "description": "Read books / incidents. Maps to @restrict to:'Viewer'. Given to bob + alice."
+    },
+    {
+      "name": "$XSAPPNAME.Support",
+      "description": "Work incidents. Maps to @restrict to:'Support'. Given to erin."
+    },
+    {
+      "name": "$XSAPPNAME.admin",
+      "description": "Full access (*). Maps to @restrict to:'admin'. Given to alice only. Keep this group tiny."
+    }
+  ],
+  "attributes": [
+    {
+      "name": "department",
+      "description": "Copied from IAS user store into JWT -> req.user.attr.department -> row filter in service.js",
+      "value-required": false
+    },
+    {
+      "name": "country",
+      "description": "Copied into JWT -> req.user.attr.country",
+      "value-required": false
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "Viewer",
+      "description": "Business user reading catalog",
+      "scope-references": ["$XSAPPNAME.Viewer"],
+      "attribute-references": ["department", "country"]
+    },
+    {
+      "name": "Support",
+      "description": "Support engineer, department-filtered incidents",
+      "scope-references": ["$XSAPPNAME.Viewer", "$XSAPPNAME.Support"],
+      "attribute-references": ["department"]
+    },
+    {
+      "name": "Administrator",
+      "description": "Break-glass admin, sees all departments",
+      "scope-references": ["$XSAPPNAME.Viewer", "$XSAPPNAME.Support", "$XSAPPNAME.admin"]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "Bookstore-Viewer",
+      "description": "Assign to bob in BTP cockpit",
+      "role-template-references": ["$XSAPPNAME.Viewer"]
+    },
+    {
+      "name": "Bookstore-Admin",
+      "description": "Assign to alice in BTP cockpit. Requires IAS group or IdP mapping.",
+      "role-template-references": ["$XSAPPNAME.Administrator"]
+    }
+  ],
+  "oauth2-configuration": {
+    "redirect-uris": ["https://*.ondemand.com/login/callback"],
+    "token-validity": 3600
+  }
+}

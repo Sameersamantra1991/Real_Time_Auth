@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+    <edmx:Include Alias="Common" Namespace="com.sap.vocabularies.Common.v1"/>
+  </edmx:Reference>
+  <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+    <edmx:Include Alias="Core" Namespace="Org.OData.Core.V1"/>
+  </edmx:Reference>
+  <edmx:DataServices>
+    <Schema Namespace="BookstoreService" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <Annotation Term="Core.Links">
+        <Collection>
+          <Record>
+            <PropertyValue Property="rel" String="author"/>
+            <PropertyValue Property="href" String="https://cap.cloud.sap"/>
+          </Record>
+        </Collection>
+      </Annotation>
+      <EntityContainer Name="EntityContainer">
+        <EntitySet Name="WhoAmI" EntityType="BookstoreService.WhoAmI"/>
+        <EntitySet Name="BookList" EntityType="BookstoreService.BookList"/>
+        <EntitySet Name="IncidentList" EntityType="BookstoreService.IncidentList"/>
+        <ActionImport Name="pingAdminOnly" Action="BookstoreService.pingAdminOnly"/>
+      </EntityContainer>
+      <EntityType Name="WhoAmI">
+        <Key>
+          <PropertyRef Name="id"/>
+        </Key>
+        <Property Name="id" Type="Edm.String" Nullable="false"/>
+        <Property Name="roles" Type="Edm.String"/>
+        <Property Name="tenant" Type="Edm.String"/>
+        <Property Name="attrDump" Type="Edm.String"/>
+      </EntityType>
+      <EntityType Name="BookList">
+        <Key>
+          <PropertyRef Name="ID"/>
+        </Key>
+        <Property Name="ID" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="title" Type="Edm.String" MaxLength="200"/>
+        <Property Name="author" Type="Edm.String" MaxLength="100"/>
+        <Property Name="price" Type="Edm.Decimal" Precision="9" Scale="2"/>
+        <Property Name="country" Type="Edm.String" MaxLength="2"/>
+      </EntityType>
+      <EntityType Name="IncidentList">
+        <Key>
+          <PropertyRef Name="ID"/>
+        </Key>
+        <Property Name="ID" Type="Edm.Int32" Nullable="false"/>
+        <Property Name="title" Type="Edm.String" MaxLength="200"/>
+        <Property Name="department" Type="Edm.String" MaxLength="50"/>
+        <Property Name="owner" Type="Edm.String" MaxLength="100"/>
+        <Property Name="status" Type="Edm.String" MaxLength="20" DefaultValue="open"/>
+      </EntityType>
+      <Action Name="pingAdminOnly" IsBound="false">
+        <ReturnType Type="Edm.String"/>
+      </Action>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

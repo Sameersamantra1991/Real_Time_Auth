@@ -1,0 +1,48 @@
+/* ============================================================================
+   FILE: app/shop/webapp/css/style.css  (loaded via manifest.json resources)
+   Fiori polish on top of sap_horizon. Rules:
+   - Only structural/decorative CSS here (gradients, spacing, pills).
+   - Never fight the theme: use --sap* variables so a theme switch still works.
+   - .sapUi* spacing classes come from UI5; custom classes only for branding.
+   ========================================================================== */
+
+/* Centered content column */
+.shopWrap { max-width: 76rem; margin-left: auto; margin-right: auto; }
+
+/* --- Hero band: deep indigo → teal gradient behind the KPI tiles -----------
+   DynamicPageHeader has its own pale background; the gradient class wins by
+   specificity (.heroHeader.sapFDynamicPageHeader). White text for contrast. */
+.heroHeader.sapFDynamicPageHeader {
+  background: linear-gradient(115deg, #1b2340 0%, #274b73 55%, #0f766e 100%);
+  border-radius: 0 0 1rem 1rem;
+}
+.heroHeader .sapMMsgStrip { margin-bottom: 0.5rem; }
+.kpiRow { gap: 0.75rem; padding: 0.25rem 0 0.5rem; }
+/* KPI tiles pop off the gradient: soft shadow + rounded corners */
+.kpiRow .sapMGT { border-radius: 1rem; box-shadow: 0 10px 28px rgba(2, 8, 30, 0.35); }
+
+/* --- Auth-flow lane: pills + connector arrows ------------------------------
+   ObjectStatus state=None (grey) → Success (green) is toggled by the
+   controller; the pill frame + arrow styling below makes it read as a flow. */
+.flowBox { gap: 0.35rem; }
+.flowBox .sapMObjStatus {
+  border: 1px dashed var(--sapContent_ForegroundBorderColor);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  background: var(--sapBackgroundColor);
+}
+.flowBox .sapMObjStatusSuccess {
+  border-style: solid;
+  border-color: var(--sapPositiveColor);
+  background: color-mix(in srgb, var(--sapPositiveColor) 10%, transparent);
+  box-shadow: 0 2px 10px rgba(16, 122, 87, 0.25);
+}
+.flowArrow { color: var(--sapContent_MarkerColor); font-weight: bold; }
+
+/* --- Cards: subtle top accent so login / req.user stand out ---------------- */
+#loginCard, #whoCard { overflow: hidden; }
+#loginCard { border-top: 3px solid var(--sapInformativeColor); }
+#whoCard { border-top: 3px solid var(--sapPositiveColor); }
+
+/* --- Monospace admin output ------------------------------------------------- */
+.monoOut { font-family: Consolas, "Courier New", monospace; font-size: 0.8rem; }

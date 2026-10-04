@@ -1,0 +1,241 @@
+{
+  "namespace": "demo.auth",
+  "definitions": {
+    "demo.auth.Books": {
+      "kind": "entity",
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.Integer"
+        },
+        "title": {
+          "type": "cds.String",
+          "length": 200
+        },
+        "author": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "price": {
+          "type": "cds.Decimal",
+          "precision": 9,
+          "scale": 2
+        },
+        "country": {
+          "type": "cds.String",
+          "length": 2
+        }
+      }
+    },
+    "demo.auth.Incidents": {
+      "kind": "entity",
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.Integer"
+        },
+        "title": {
+          "type": "cds.String",
+          "length": 200
+        },
+        "department": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "owner": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "status": {
+          "type": "cds.String",
+          "length": 20,
+          "default": {
+            "val": "open"
+          }
+        }
+      }
+    },
+    "BookstoreService": {
+      "@source": "srv/bookstore-service.cds",
+      "kind": "service",
+      "@requires": "authenticated-user",
+      "@path": "/bookstore"
+    },
+    "BookstoreService.WhoAmI": {
+      "kind": "entity",
+      "elements": {
+        "id": {
+          "key": true,
+          "type": "cds.String"
+        },
+        "roles": {
+          "type": "cds.String"
+        },
+        "tenant": {
+          "type": "cds.String"
+        },
+        "attrDump": {
+          "type": "cds.String"
+        }
+      }
+    },
+    "BookstoreService.BookList": {
+      "kind": "entity",
+      "@restrict": [
+        {
+          "grant": "READ",
+          "to": "Viewer"
+        },
+        {
+          "grant": "*",
+          "to": "admin"
+        }
+      ],
+      "projection": {
+        "from": {
+          "ref": [
+            "demo.auth.Books"
+          ]
+        }
+      },
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.Integer"
+        },
+        "title": {
+          "type": "cds.String",
+          "length": 200
+        },
+        "author": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "price": {
+          "type": "cds.Decimal",
+          "precision": 9,
+          "scale": 2
+        },
+        "country": {
+          "type": "cds.String",
+          "length": 2
+        }
+      }
+    },
+    "BookstoreService.IncidentList": {
+      "kind": "entity",
+      "@restrict": [
+        {
+          "grant": "READ",
+          "to": [
+            "Support",
+            "admin"
+          ]
+        },
+        {
+          "grant": "CREATE",
+          "to": [
+            "Support",
+            "admin"
+          ]
+        },
+        {
+          "grant": "UPDATE",
+          "to": "admin"
+        }
+      ],
+      "projection": {
+        "from": {
+          "ref": [
+            "demo.auth.Incidents"
+          ]
+        }
+      },
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.Integer"
+        },
+        "title": {
+          "type": "cds.String",
+          "length": 200
+        },
+        "department": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "owner": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "status": {
+          "type": "cds.String",
+          "length": 20,
+          "default": {
+            "val": "open"
+          }
+        }
+      }
+    },
+    "BookstoreService.pingAdminOnly": {
+      "kind": "action",
+      "returns": {
+        "type": "cds.String"
+      }
+    },
+    "cds.outbox.Messages": {
+      "kind": "entity",
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.UUID"
+        },
+        "timestamp": {
+          "type": "cds.Timestamp"
+        },
+        "target": {
+          "type": "cds.String"
+        },
+        "msg": {
+          "type": "cds.LargeString"
+        },
+        "attempts": {
+          "type": "cds.Integer",
+          "default": {
+            "val": 0
+          }
+        },
+        "partition": {
+          "type": "cds.Integer",
+          "default": {
+            "val": 0
+          }
+        },
+        "lastError": {
+          "type": "cds.LargeString"
+        },
+        "lastAttemptTimestamp": {
+          "type": "cds.Timestamp"
+        },
+        "status": {
+          "type": "cds.String",
+          "length": 23
+        },
+        "task": {
+          "type": "cds.String",
+          "length": 255
+        },
+        "appid": {
+          "type": "cds.String",
+          "length": 255
+        }
+      }
+    }
+  },
+  "meta": {
+    "creator": "CDS Compiler v7.1.1",
+    "compilerCsnFlavor": "inferred",
+    "flavor": "inferred"
+  },
+  "$version": "2.0"
+}

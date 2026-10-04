@@ -1,0 +1,7 @@
+VIEW BookstoreService_BookList AS SELECT
+  Books_0.ID,
+  Books_0.title,
+  Books_0.author,
+  Books_0.price,
+  Books_0.country
+FROM demo_auth_Books AS Books_0

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!-- ============================================================================
+  FILE: app/shop/index.html  (local: http://localhost:4004/shop/ )
+  Mirrored to approuter/resources/shop/index.html for BTP (welcomeFile).
+  ----------------------------------------------------------------------------
+  UI5 BOOTSTRAP NOTES (learn):
+  - sap-ui-core.js loads the whole UI5 runtime async. Version is PINNED
+    (1.120 LTS) so a CDN update can never silently break this app.
+  - data-sap-ui-resource-roots maps the component namespace "demo.shop" to
+    ./webapp, so Component.js / manifest.json / view / controller resolve.
+  - No app code runs before the bootstrap "on-init" fires (ComponentSupport
+    auto-instantiates the component declared in the div below).
+  - CDN = needs internet. For fully offline/air-gapped landscapes, vendor
+    UI5 via `npm i @openui5/...` or serve from the HTML5 Application Repo.
+  ========================================================================== -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure Bookstore · UI5</title>
+  <script
+    id="sap-ui-bootstrap"
+    src="https://ui5.sap.com/1.120/resources/sap-ui-core.js"
+    data-sap-ui-theme="sap_horizon"
+    data-sap-ui-libs="sap.m,sap.f,sap.ui.layout"
+    data-sap-ui-async="true"
+    data-sap-ui-compat-version="edge"
+    data-sap-ui-resource-roots='{"demo.shop": "./webapp"}'
+    data-sap-ui-on-init="module:sap/ui/core/ComponentSupport"
+  ></script>
+</head>
+<!-- sapUiBody = base Fiori font + background. sapUiSizeCompact = denser rows -->
+<body class="sapUiBody sapUiSizeCompact">
+  <!-- ComponentSupport turns this div into the demo.shop UIComponent -->
+  <div data-sap-ui-component data-name="demo.shop" data-id="shop"></div>
+</body>
+</html>

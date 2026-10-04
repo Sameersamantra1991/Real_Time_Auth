@@ -1,0 +1,8 @@
+COLUMN TABLE demo_auth_Books (
+  ID INTEGER NOT NULL,
+  title NVARCHAR(200),
+  author NVARCHAR(100),
+  price DECIMAL(9, 2),
+  country NVARCHAR(2),
+  PRIMARY KEY(ID)
+)

@@ -1,0 +1,101 @@
+{
+  "name": "real-time-auth-demo",
+  "version": "1.0.0",
+  "description": "Small fully-commented CAP app to learn Diagram 1: Authentication Flow from Login to req.user",
+  "private": true,
+  "type": "commonjs",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "cds watch --profile development",
+    "start:mocked": "cds serve --profile mocked",
+    "start:jwt": "cds serve --profile jwt",
+    "start:xsuaa": "cds serve --profile xsuaa",
+    "start:ias": "cds serve --profile ias",
+    "token": "node ./auth/generate-token.js",
+    "deploy": "cds build --for production",
+    "build:mta": "cds build --production",
+    "deploy:cf": "cf deploy mta_archives/real-time-auth-demo_1.0.0.mtar"
+  },
+  "dependencies": {
+    "@cap-js/hana": "^3",
+    "@sap/cds": "^10",
+    "@sap/xssec": "^4",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^3",
+    "@sap/cds-dk": "^10.1.0"
+  },
+  "cds": {
+    "requires": {
+      "workzone": true,
+      "db": {
+        "kind": "sqlite",
+        "[production]": { "kind": "hana" }
+      },
+      "auth": {
+        "kind": "mocked",
+        "users": {
+          "alice": {
+            "password": "alice",
+            "roles": [
+              "admin",
+              "Viewer"
+            ],
+            "attr": {
+              "department": "sales",
+              "country": "DE"
+            }
+          },
+          "bob": {
+            "password": "bob",
+            "roles": [
+              "Viewer"
+            ],
+            "attr": {
+              "department": "marketing",
+              "country": "IN"
+            }
+          },
+          "erin": {
+            "password": "erin",
+            "roles": [
+              "Support"
+            ],
+            "attr": {
+              "department": "support",
+              "country": "US"
+            }
+          }
+        },
+        "[mocked]": {
+          "kind": "mocked"
+        },
+        "[development]": {
+          "kind": "mocked"
+        },
+        "[xsuaa]": {
+          "kind": "xsuaa"
+        },
+        "[ias]": {
+          "kind": "ias"
+        },
+        "[jwt]": {
+          "kind": "jwt",
+          "jwt": {
+            "jwks_uri": "https://YOUR-TENANT.accounts.ondemand.com/oauth2/certs",
+            "aud": "real-time-auth-demo",
+            "iss": "https://YOUR-TENANT.accounts.ondemand.com"
+          }
+        },
+        "[production]": { "kind": "xsuaa" }
+      }
+    },
+    "features": {
+      "auth": true
+    }
+  }
+}

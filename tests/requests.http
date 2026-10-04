@@ -1,0 +1,66 @@
+### tests/requests.http — Postman flows for Diagram 1 (VS Code REST Client or Postman import)
+### Base URL for `npm run dev` is http://localhost:4004
+### CONCEPT: mocked auth uses Basic, real IdPs use Bearer. Both end at same req.user.
+
+@base = http://localhost:4004
+# Base64: alice:alice -> YWxpY2U6YWxpY2U= | bob:bob -> Ym9iOmJvYg== | erin:erin -> ZXJpbjplcmVu
+
+### 1) PHASE 7 — No credentials -> 401 Unauthorized (diagram: Valid? --No--> 401)
+GET {{base}}/bookstore/WhoAmI
+
+### 2) PHASE 7 — alice (admin+Viewer) sees her req.user {id, roles, attr}
+GET {{base}}/bookstore/WhoAmI
+Authorization: Basic YWxpY2U6YWxpY2U=
+
+### 3) bob (Viewer only)
+GET {{base}}/bookstore/WhoAmI
+Authorization: Basic Ym9iOmJvYg==
+
+### 4) erin (Support, department=support)
+GET {{base}}/bookstore/WhoAmI
+Authorization: Basic ZXJpbjplcmVu
+
+### 5) ROLE-BASED READ — bob MAY read books (has Viewer) -> 200
+GET {{base}}/bookstore/BookList
+Authorization: Basic Ym9iOmJvYg==
+
+### 6) ROLE-BASED WRITE — bob may NOT create (needs admin) -> 403 Forbidden
+POST {{base}}/bookstore/BookList
+Authorization: Basic Ym9iOmJvYg==
+Content-Type: application/json
+
+{ "ID": 99, "title": "Hacker Book", "author": "mallory", "price": 1.00, "country": "IN" }
+
+### 7) Same CREATE as alice (admin) -> 201 Created
+POST {{base}}/bookstore/BookList
+Authorization: Basic YWxpY2U6YWxpY2U=
+Content-Type: application/json
+
+{ "ID": 10, "title": "Secure CAP", "author": "alice", "price": 42.00, "country": "DE" }
+
+### 8) INPUT VALIDATION — stored-XSS blocked -> 400 (see service.js)
+POST {{base}}/bookstore/BookList
+Authorization: Basic YWxpY2U6YWxpY2U=
+Content-Type: application/json
+
+{ "ID": 11, "title": "<script>alert(1)</script>", "author": "x", "price": 9.99, "country": "DE" }
+
+### 9) ATTRIBUTE FILTER — erin sees ONLY support incidents (req.user.attr.department)
+GET {{base}}/bookstore/IncidentList
+Authorization: Basic ZXJpbjplcmVu
+
+### 10) Same list as alice (admin bypasses filter, sees all)
+GET {{base}}/bookstore/IncidentList
+Authorization: Basic YWxpY2U6YWxpY2U=
+
+### 11) ACTION — bob (no admin) -> 403, alice -> 200
+POST {{base}}/bookstore/pingAdminOnly
+Authorization: Basic Ym9iOmJvYg==
+Content-Type: application/json
+
+{}
+
+### 12) PROD SHAPE — Bearer JWT (works after `cf push` with ias/xsuaa binding)
+### Replace PASTE_JWT with token from `npm run token` (learning) or IAS (real).
+# GET {{base}}/bookstore/WhoAmI
+# Authorization: Bearer PASTE_JWT

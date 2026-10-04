@@ -1,0 +1,37 @@
+{
+  "_comment": "FILE: approuter/xs-app.json — routes EVERY external call. Diagram: User/UI5/Postman -> Approuter -> (login?) -> srv. authenticationMethod: route = each route decides; /bookstore needs login, /health is public for CF health checks.",
+  "welcomeFile": "/shop/index.html",
+  "authenticationMethod": "route",
+  "logout": { "logoutEndpoint": "/do/logout" },
+  "routes": [
+    {
+      "_comment": "HEALTH: CF calls this to decide if srv is alive. No login, else restarts loop forever.",
+      "source": "^/-/cds/health(.*)$",
+      "target": "$1",
+      "destination": "srv-api",
+      "authenticationType": "none"
+    },
+    {
+      "_comment": "API: the protected OData service. Browsers without session get 302 to XSUAA login (XSUAA Service box). Postman with Bearer JWT passes through; srv xssec returns 401/403 as in diagram.",
+      "source": "^/bookstore(.*)$",
+      "target": "/bookstore$1",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa",
+      "csrfProtection": true
+    },
+    {
+      "_comment": "UI5 APP: demo.shop Component served as static files. Login required so anon cannot fingerprint the UI version. Mirrors app/shop/ (local dev copy).",
+      "source": "^/shop/(.*)$",
+      "target": "/shop/$1",
+      "localDir": "resources",
+      "authenticationType": "xsuaa"
+    },
+    {
+      "_comment": "STATIC: flat files in approuter/resources/ (index.html, styles.css, app.js). Must stay in sync with app/ (local dev copy). Login required so anon cannot fingerprint the UI version.",
+      "source": "^(index\\.html|styles\\.css|app\\.js)$",
+      "target": "/$1",
+      "localDir": "resources",
+      "authenticationType": "xsuaa"
+    }
+  ]
+}

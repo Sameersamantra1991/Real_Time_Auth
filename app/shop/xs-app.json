@@ -1,0 +1,19 @@
+{
+  "_comment": "FILE: app/shop/xs-app.json — HTML5-repo router for SAP Build Workzone. Backend calls go via the srv-api destination (created by the app-deployer); everything else is served from the HTML5 Application Repository runtime.",
+  "authenticationMethod": "route",
+  "routes": [
+    {
+      "source": "^/bookstore(.*)$",
+      "target": "/bookstore$1",
+      "destination": "srv-api",
+      "authenticationType": "xsuaa",
+      "csrfProtection": true
+    },
+    {
+      "source": "^(.*)$",
+      "target": "$1",
+      "service": "html5-apps-repo-rt",
+      "authenticationType": "xsuaa"
+    }
+  ]
+}

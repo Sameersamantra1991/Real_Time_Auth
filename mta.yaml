@@ -1,0 +1,272 @@
+# ============================================================================
+# FILE: mta.yaml  —  Multi-Target Application descriptor for BTP Cloud Foundry
+# DIAGRAM MAPPING: this file DEPLOYS the left arrow of your image:
+#   "xsuaa" -> "XSUAA Service" -> "Identity Provider" -> JWT -> CAP xssec
+# ----------------------------------------------------------------------------
+# WHAT MTA DOES:
+#   1. Creates service instances (HDI container for data, XSUAA for login)
+#   2. Builds + pushes 3 modules (db-deployer, srv, approuter) in ONE `cf deploy`
+#   3. Wires them via `requires/provides` so srv gets DB credentials +
+#      XSUAA credentials via VCAP_SERVICES env (CAP reads this automatically,
+#      no code change needed — cds.requires.auth.kind=xsuaa picks it up).
+#
+# DEPLOY COMMANDS (after `cf login` + `cf target -o <org> -s <space>`):
+#   npm run build:mta   -> cds build --production (fills gen/db, gen/srv)
+#   mbt build           -> creates real-time-auth-demo_1.0.0.mtar
+#   cf deploy <mtar>    -> pushes everything
+# THEN: cf apps, take approuter URL, assign role-collections in BTP cockpit.
+# ============================================================================
+_schema-version: '3.3.0'
+ID: real-time-auth-demo
+version: 1.0.0
+description: Secure CAP demo — Diagram 1 auth flow with XSUAA (learning app)
+
+# -- Global build: cds build generates gen/srv + gen/db for Cloud Foundry ----
+parameters:
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npx cds build --production
+        # SECURITY NOTE: --production strips mocked users + sqlite,
+        # uses [production] profile in package.json (hana + xsuaa).
+        # Never deploy without this flag or mock logins ship to prod.
+
+# ============================================================================
+# MODULES: the runnable pieces. Deploy order is auto-resolved from requires.
+# ============================================================================
+modules:
+  # --------------------------------------------------------------------------
+  # MODULE 1: HANA deployer — creates TABLES from db/schema.cds
+  # Runs once per deploy (hdb buildpack executes gen/db/src/*.hdbtable etc.)
+  # No route, no auth — only needs the HDI container binding.
+  # --------------------------------------------------------------------------
+  - name: real-time-auth-demo-db-deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: com.sap.hdb
+    requires:
+      - name: real-time-auth-demo-db
+        # DIAGRAM: data BEHIND "Go to Authorization" lives in this container.
+
+  # --------------------------------------------------------------------------
+  # MODULE 2: CAP srv — your Node.js OData API (BookstoreService)
+  # DIAGRAM BOX: "CAP Middleware xssec validates" RUNS HERE.
+  # At runtime CAP reads VCAP_SERVICES.xsuaa -> validates Bearer JWTs from
+  # the XSUAA Identity Provider. No JWT code needed — xssec does it.
+  # --------------------------------------------------------------------------
+  - name: real-time-auth-demo-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 512M
+      disk-quota: 512M
+      instances: 1
+      # Health check so CF restarts the app if xssec/odata hangs:
+      health-check-type: http
+      health-check-http-endpoint: /-/cds/health
+      # Env tells CAP: production = hana + xsuaa (overrides local mocked):
+      # (also set in package.json [production], this is belt-and-braces)
+    properties:
+      CDS_REQUIRES_DB_KIND: hana
+      CDS_REQUIRES_AUTH_KIND: xsuaa
+      # Rate-limit / CORS tightening for prod (see srv/server.js):
+      ALLOWED_ORIGINS: https://real-time-auth-demo-approuter.cfapps.eu10.hana.ondemand.com
+    requires:
+      - name: real-time-auth-demo-db
+        # HANA credentials injected -> CAP connects with mTLS, no passwords in code.
+      - name: real-time-auth-demo-auth
+        # XSUAA credentials injected -> xssec trusts THIS tenant's JWTs only.
+        # This binding is what turns kind=xsuaa from config into REAL validation.
+    provides:
+      - name: srv-api
+        properties:
+          # Approuter reads this to build the /bookstore destination:
+          srv-url: ${default-url}
+
+  # --------------------------------------------------------------------------
+  # MODULE 3: Approuter — SINGLE front door for UI5/Postman/Browser
+  # WHY: browsers must NOT call srv directly (CORS + token leak). Flow:
+  #   User -> Approuter (/login) -> XSUAA login page -> JWT in session ->
+  #   Approuter forwards /bookstore/* with Authorization header to srv.
+  # Unauthenticated /bookstore call -> 302 redirect to XSUAA login (not 401),
+  # API clients with Bearer JWT -> passed through, srv returns 401/403 as before.
+  # --------------------------------------------------------------------------
+  - name: real-time-auth-demo-approuter
+    type: approuter.nodejs
+    path: approuter
+    parameters:
+      memory: 256M
+      disk-quota: 256M
+      instances: 1
+      keep-existing-routes: true
+    requires:
+      - name: real-time-auth-demo-auth
+        # Approuter ALSO binds xsuaa to start the login flow (clientid/secret).
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api
+          url: ~{srv-url}
+          forwardAuthToken: true
+          # forwardAuthToken=true = approuter passes the JWT to srv untouched,
+          # so srv's xssec sees the ORIGINAL "Authorization: Bearer JWT" box.
+      - name: real-time-auth-demo-html5-runtime
+        # HTML5 runtime binding lets the managed approuter serve Workzone /
+        # HTML5-repo content (html5-apps-repo-rt service in app/shop/xs-app.json).
+      - name: real-time-auth-demo-destination
+        # Destination service binding: Workzone HTML5 apps resolve the
+        # srv-api backend through this instance at runtime.
+
+  # --------------------------------------------------------------------------
+  # MODULE 4: HTML5 UI (shop) — zipped and pushed to the HTML5 Application Repo.
+  # Static UI5 (no npm build), so build-result "." = zip app/shop as-is.
+  # The zip MUST contain webapp/manifest.json (with sap.cloud.service +
+  # crossNavigation inbounds) + xs-app.json (backend routing to srv-api).
+  # Workzone Content Manager then federates it via the -destinations module.
+  # --------------------------------------------------------------------------
+  - name: realtimeauthdemoshop
+    type: html5
+    path: app/shop
+    build-parameters:
+      build-result: .
+      supported-platforms: []
+
+  # --------------------------------------------------------------------------
+  # MODULE 5: app-deployer — pushes shop.zip into the html5-repo-host instance
+  # and registers the srv-api destination (backend URL injected from srv).
+  # --------------------------------------------------------------------------
+  - name: real-time-auth-demo-app-deployer
+    type: com.sap.application.content
+    path: gen
+    build-parameters:
+      build-result: app/
+      requires:
+        - name: realtimeauthdemoshop
+          artifacts:
+            - shop.zip
+          target-path: app/
+    requires:
+      - name: real-time-auth-demo-auth
+      - name: srv-api
+      - name: real-time-auth-demo-html5-repo-host
+        parameters:
+          content-target: true
+          config:
+            HTML5Runtime_enabled: true
+    parameters:
+      config:
+        destinations:
+          - Name: srv-api
+            URL: ~{srv-api/srv-url}
+            Authentication: NoAuthentication
+            Type: HTTP
+            ProxyType: Internet
+            ForwardAuthToken: true
+            DynamicDestination: true
+
+  # --------------------------------------------------------------------------
+  # MODULE 6: destinations — registers HTML5-repo + XSUAA user-exchange
+  # destinations in the destination service for SAP Build Workzone.
+  # sap.cloud.service MUST match manifest.json sap.cloud.service
+  # (realtimeauthdemo.service) or Workzone cannot resolve the app.
+  # --------------------------------------------------------------------------
+  - name: real-time-auth-demo-destinations
+    type: com.sap.application.content
+    build-parameters:
+      no-source: true
+    parameters:
+      content:
+        instance:
+          existing_destinations_policy: update
+          destinations:
+            - Name: real-time-auth-demo-html5-repository
+              ServiceInstanceName: real-time-auth-demo-html5-repo-host
+              ServiceKeyName: real-time-auth-demo-html5-repo-host-key
+              sap.cloud.service: realtimeauthdemo.service
+            - Name: real-time-auth-demo-auth
+              Authentication: OAuth2UserTokenExchange
+              ServiceInstanceName: real-time-auth-demo-auth
+              ServiceKeyName: real-time-auth-demo-auth-key
+              sap.cloud.service: realtimeauthdemo.service
+    requires:
+      - name: real-time-auth-demo-auth
+        parameters:
+          service-key:
+            name: real-time-auth-demo-auth-key
+      - name: real-time-auth-demo-html5-repo-host
+        parameters:
+          service-key:
+            name: real-time-auth-demo-html5-repo-host-key
+      - name: srv-api
+      - name: real-time-auth-demo-destination
+        parameters:
+          content-target: true
+
+# ============================================================================
+# RESOURCES: managed BTP services (created once, reused on re-deploy).
+# ============================================================================
+resources:
+  # --------------------------------------------------------------------------
+  # RESOURCE 1: HDI container — isolated schema per space (dev/test/prod).
+  # --------------------------------------------------------------------------
+  - name: real-time-auth-demo-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+    properties:
+      hdi-container-name: ${service-name}
+
+  # --------------------------------------------------------------------------
+  # RESOURCE 2: XSUAA instance — THE "XSUAA Service" box in your diagram.
+  # Broker reads xs-security.json:
+  #   xsappname + scopes -> JWT `scope` claims
+  #   role-templates/collections -> BTP cockpit role assignment UI
+  #   oauth2-configuration -> token lifetime, redirect URIs
+  # AFTER DEPLOY: BTP cockpit > Security > Role Collections > assign
+  #   Bookstore-Viewer -> bob, Bookstore-Admin -> alice, then test:
+  #   https://<approuter>/bookstore/WhoAmI  (browser login, expect id/roles/attr)
+  # --------------------------------------------------------------------------
+  - name: real-time-auth-demo-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        # xsappname MUST be unique per subaccount; tenant-mode dedicated =
+        # one IdP tenant for this app (simplest for learning; use shared for SaaS).
+        xsappname: real-time-auth-demo
+        tenant-mode: dedicated
+
+  # --------------------------------------------------------------------------
+  # RESOURCE 3: destination service — stores srv-api + html5-repository +
+  # XSUAA-exchange destinations consumed by Workzone at runtime.
+  # --------------------------------------------------------------------------
+  - name: real-time-auth-demo-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+    requires:
+      - name: srv-api
+
+  # --------------------------------------------------------------------------
+  # RESOURCE 4+5: HTML5 Application Repository — app-host stores the UI zips
+  # (written by -app-deployer), app-runtime serves them to Workzone/FLP.
+  # --------------------------------------------------------------------------
+  - name: real-time-auth-demo-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
+
+  - name: real-time-auth-demo-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host

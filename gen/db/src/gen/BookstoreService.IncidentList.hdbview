@@ -1,0 +1,7 @@
+VIEW BookstoreService_IncidentList AS SELECT
+  Incidents_0.ID,
+  Incidents_0.title,
+  Incidents_0.department,
+  Incidents_0.owner,
+  Incidents_0.status
+FROM demo_auth_Incidents AS Incidents_0

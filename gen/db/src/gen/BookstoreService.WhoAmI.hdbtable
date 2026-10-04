@@ -1,0 +1,7 @@
+COLUMN TABLE BookstoreService_WhoAmI (
+  id NVARCHAR(5000) NOT NULL,
+  roles NVARCHAR(5000),
+  tenant NVARCHAR(5000),
+  attrDump NVARCHAR(5000),
+  PRIMARY KEY(id)
+)
